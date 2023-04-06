@@ -1,26 +1,23 @@
 import logging
 
-import pyspark.sql.functions as f
+import pandas as pd
 
 from .utils import get_json
 
 
 def get_posts(**kwargs):
-    spark = kwargs.get('session')
     users_csv = kwargs['ti'].xcom_pull(key='users')
-    users_df = spark.read.csv(users_csv, header=True)
-
-    user_ids = users_df.select(f.collect_list('id')).first()[0]
+    users_df = pd.read_csv(users_csv)
 
     posts_count = []
-    for user_id in user_ids:
+    for user_id in users_df.id.to_list():
         url = f'https://jsonplaceholder.typicode.com/users/{user_id}/posts'
         j = get_json(url)
         logging.info(f'Got posts information for user # {user_id}')
         posts_count.append({'id': user_id, 'post_count': len(j)})
 
     posts_filename = 'posts.csv'
-    posts_count_df = spark.createDataFrame(data=posts_count)
-    posts_count_df.toPandas().to_csv('posts.csv', index=False)
+    posts_df = pd.DataFrame(posts_count)
+    posts_df.to_csv(posts_filename, index=False)
 
     kwargs['ti'].xcom_push(key='posts', value=posts_filename)

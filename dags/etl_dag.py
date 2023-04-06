@@ -2,14 +2,11 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from pyspark.sql import SparkSession
 
 from etl.get_posts import get_posts
 from etl.get_todos import get_todos
 from etl.get_users import get_users
 from etl.load import load
-
-spark = SparkSession.builder.appName('app').getOrCreate()
 
 with DAG(
         dag_id='ETL',
@@ -25,7 +22,6 @@ with DAG(
         task_id='Users',
         python_callable=get_users,
         execution_timeout=timedelta(minutes=5),
-        op_kwargs={'session': spark}
     )
 
     t2 = PythonOperator(
@@ -33,7 +29,6 @@ with DAG(
         task_id='Posts',
         python_callable=get_posts,
         execution_timeout=timedelta(minutes=5),
-        op_kwargs={'session': spark}
     )
 
     t3 = PythonOperator(
@@ -41,7 +36,6 @@ with DAG(
         task_id='Todos',
         python_callable=get_todos,
         execution_timeout=timedelta(minutes=5),
-        op_kwargs={'session': spark}
     )
 
     t4 = PythonOperator(
@@ -49,7 +43,6 @@ with DAG(
         task_id='UserInfo',
         python_callable=load,
         execution_timeout=timedelta(minutes=5),
-        op_kwargs={'session': spark}
     )
 
     t1 >> t2 >> t4
